@@ -7,13 +7,13 @@ import akka.stream.scaladsl._
 
 import scala.concurrent.Future
 
-object EntryPoint extends App {
+object LogApp extends App {
   implicit val system: ActorSystem = ActorSystem("MyAkkaSystem")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val context = new LogMarshalling {}
+  val context = new DefaultLogMarshalling {}
 
   val x: Future[Done] = FileIO.fromPath(Paths.get("temp/all-logs.txt"))
     .via(context.frame)
@@ -28,7 +28,7 @@ object EntryPoint extends App {
 
 }
 
-case class ParseError(error: String, log: String) extends Exception(log)
+
 
 
 

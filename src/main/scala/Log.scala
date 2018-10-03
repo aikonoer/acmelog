@@ -6,3 +6,5 @@ sealed trait Level
 case object Error extends Level
 case object Info extends Level
 case object Warn extends Level
+
+case class ParseError(error: String, log: String) extends Exception(error)

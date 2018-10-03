@@ -6,7 +6,7 @@ import akka.util.ByteString
 
 import scala.util.{Failure, Success, Try}
 
-trait LogMarshalling {
+trait DefaultLogMarshalling {
 
   def frame: Flow[ByteString, ByteString, NotUsed] =
     Framing.delimiter(ByteString("\n"), Int.MaxValue, allowTruncation = true)
@@ -32,15 +32,15 @@ trait LogMarshalling {
         val first = timeStamp.split(" ")
         if (first.size == 3) {
           Try{
-            (LocalDate.parse(first(0)), LocalTime.parse(first(1)), first(2).toLowerCase.capitalize match {
-              case Info.toString => Info
-              case Warn.toString => Warn
-              case Error.toString => Error
+            (LocalDate.parse(first(0)), LocalTime.parse(first(1)), first(2) match {
+              case "INFO" => Info
+              case "WARN" => Warn
+              case "ERROR" => Error
               case _ => throw ParseError("Unknown severity", log)
             })
           } match {
-            case Success(data) => Right(Log(data._1, data._2, data._3, det)))
-            case Failure(ex) => Left(ParseError(ex.getMessage, log))
+            case Success(data) => Right(Log(data._1, data._2, data._3, det))
+            case Failure(ex) => Left(ParseError(ex.getCause.getLocalizedMessage, log))
           }
         } else Left(ParseError("Can't parse!", log))
 
