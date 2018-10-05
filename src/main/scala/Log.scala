@@ -1,6 +1,8 @@
 import java.time.{LocalDate, LocalTime}
 
-case class Log(date: LocalDate, time: LocalTime, severity: Severity, description: String)
+case class Log(date: LocalDate, time: LocalTime, severity: Severity, description: String){
+  override def toString: String = s"$date $time ${severity.toString.toUpperCase} - $description"
+}
 
 sealed trait Severity {
   val asString: String
