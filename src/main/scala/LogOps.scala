@@ -61,12 +61,7 @@ trait LogOps {
           Try {
             val date = LocalDate.parse(dateTimeLevel(0))
             val time = LocalTime.parse(dateTimeLevel(1))
-            val severity: Severity = dateTimeLevel(2) match {
-              case Info.asString => Info
-              case Warn.asString => Warn
-              case Error.asString => Error
-              case _ => throw ParseError("Unknown severity", log)
-            }
+            val severity = dateTimeLevel(2)
             (date, time, severity)
           } match {
             case Success((date, time, severity)) => Future.successful(Right(Log(date, time, severity, details.drop(2))))
