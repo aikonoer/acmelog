@@ -30,7 +30,7 @@ trait LogOps {
   def concatLines: Flow[String, List[String], NotUsed] =
     Flow[String].fold(List.empty[String]) { (acc, next) =>
       if (isLogPattern(next) || acc.isEmpty) next :: acc
-      else (acc.head + next) :: acc.tail
+      else (acc.head + " " + next) :: acc.tail
     }
 
   /*
@@ -53,7 +53,7 @@ trait LogOps {
   /*
   * Parses log line to Log object
   * */
-  def toLog: String => Future[Either[Exception, Log]] = (log: String) =>
+  def toLog(log: String): Future[Either[Exception, Log]] =
     log.splitAt(26) match {
       case (timeStamp, details) =>
         val dateTimeLevel = timeStamp.split(" ")

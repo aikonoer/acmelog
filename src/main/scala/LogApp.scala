@@ -20,8 +20,8 @@ case class LogApp(env: LogOps, args: Array[String]) {
   def run(): Unit = {
 
     val logConfig = for {
-      parsed <- LogConfig.parse(args)
-      validated <- LogConfig.validate(parsed)
+      parsed <- Config.parse(args)
+      validated <- Config.validate(parsed)
     } yield validated
 
     if (logConfig.isLeft) {

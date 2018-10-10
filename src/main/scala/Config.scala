@@ -4,13 +4,13 @@ import com.typesafe.scalalogging.Logger
 
 import scala.util.Try
 
-case class LogConfig(job: Option[String] = None,
-                     source: Option[String] = None,
-                     destination: Option[String] = None,
-                     from: Option[LocalDateTime] = None,
-                     to: Option[LocalDateTime] = None,
-                     severity: Option[Array[String]] = None,
-                     words: Option[Array[String]] = None) {
+case class Config(job: Option[String] = None,
+                  source: Option[String] = None,
+                  destination: Option[String] = None,
+                  from: Option[LocalDateTime] = None,
+                  to: Option[LocalDateTime] = None,
+                  severity: Option[Array[String]] = None,
+                  words: Option[Array[String]] = None) {
 
   override def toString: String = {
     s"""
@@ -26,18 +26,17 @@ case class LogConfig(job: Option[String] = None,
 }
 
 
-object LogConfig {
+object Config {
 
   /*
   * Parse program arguments
   * */
-
-  def parse(args: Array[String]): Either[Throwable, LogConfig] = {
+  def parse(args: Array[String]): Either[Throwable, Config] = {
     val logger = Logger("LogConfig")
     logger.info("Parsing program arguments.")
 
-    def loop(args: List[String]): LogConfig = args match {
-      case Nil => LogConfig()
+    def loop(args: List[String]): Config = args match {
+      case Nil => Config()
       case "-j" :: j :: tail => loop(tail).copy(job = Some(j))
       case "-s" :: s :: tail => loop(tail).copy(source = Some(s))
       case "-d" :: d :: tail => loop(tail).copy(destination = Some(d))
@@ -45,7 +44,7 @@ object LogConfig {
       case "-t" :: t :: tail => loop(tail).copy(to = Some(LocalDateTime.parse(t)))
       case "-v" :: v :: tail => loop(tail).copy(severity = Some(v.split(',')))
       case "-w" :: w :: tail => loop(tail).copy(words = Some(w.split(',').map(_.trim)))
-      case _ => throw ParseError("Parsing argument error! Please try again")
+      case _ => throw ParseError("Parsing argument error! Check format and try again")
     }
 
     Try {
@@ -56,7 +55,10 @@ object LogConfig {
   /*
   * Validates LogConfig data
   * */
-  def validate(config: LogConfig): Either[Throwable, LogConfig] = {
+  def validate(config: Config): Either[Throwable, Config] = {
+
+    val logger = Logger("LogConfig")
+    logger.info("Validating program arguments.")
     Try {
       if (config.job.isEmpty) throw ValidationError("No job argument.")
       if (!Array("SEARCH", "EXTRACT").contains(config.job.get)) throw ValidationError("Job argument incorrect. Try SEARCH or EXTRACT")

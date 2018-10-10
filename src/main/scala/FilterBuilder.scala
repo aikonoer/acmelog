@@ -13,12 +13,12 @@ case class FilterBuilder(build: Flow[Log, Log, NotUsed] = Flow[Log]) {
   /*
   * date and time from, inclusive
   * */
-  def from(from: LocalDateTime): FilterBuilder = append(log => log.date.atTime(log.time).isAfter(from))
+  def from(from: LocalDateTime): FilterBuilder = append(log => !log.date.atTime(log.time).isBefore(from))
 
   /*
   * date and time to, inclusive
   * */
-  def to(to: LocalDateTime): FilterBuilder = append(log => log.date.atTime(log.time).isBefore(to))
+  def to(to: LocalDateTime): FilterBuilder = append(log => !log.date.atTime(log.time).isBefore(to))
 
 
   /*
@@ -60,7 +60,7 @@ object FilterBuilder {
   * return Flow[Log, Log, Unused]
   *
   * */
-  def build(config: LogConfig): Flow[Log, Log, NotUsed] = {
+  def build(config: Config): Flow[Log, Log, NotUsed] = {
     val logger = Logger("FilterBuilder")
     logger.info("Building filters. From date time defaults to current month while to defaults to now")
 
