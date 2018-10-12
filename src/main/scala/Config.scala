@@ -43,7 +43,7 @@ object Config {
       case "-f" :: f :: tail => loop(tail).copy(from = Some(LocalDateTime.parse(f)))
       case "-t" :: t :: tail => loop(tail).copy(to = Some(LocalDateTime.parse(t)))
       case "-v" :: v :: tail => loop(tail).copy(severity = Some(v.split(',')))
-      case "-w" :: w :: tail => loop(tail).copy(words = Some(w.split(',').map(_.trim)))
+      case "-w" :: w :: tail => loop(tail).copy(words = Some(w.split(',').map(_.replace('$', ' '))))
       case _ => throw ParseError("Parsing argument error! Check format and try again")
     }
 

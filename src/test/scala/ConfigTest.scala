@@ -48,4 +48,12 @@ class ConfigTest extends FlatSpec with Matchers {
     Left(ValidationError("No job argument."))
   }
 
+  "Config.parse" should "return words consisting of phrases" in {
+    val args = "-j EXTRACT -s temp/all-logs.txt -w logged$in,finalised"
+    val split = args.split(" ")
+    println(split.mkString(", "))
+    val parsed = Config.parse(split)
+    parsed.right.get.words.get shouldBe Array("logged in", "finalised")
+  }
+
 }
