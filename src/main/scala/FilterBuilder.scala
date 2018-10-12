@@ -18,7 +18,7 @@ case class FilterBuilder(build: Flow[Log, Log, NotUsed] = Flow[Log]) {
   /*
   * date and time to, inclusive
   * */
-  def to(to: LocalDateTime): FilterBuilder = append(log => !log.date.atTime(log.time).isBefore(to))
+  def to(to: LocalDateTime): FilterBuilder = append(log => !log.date.atTime(log.time).isAfter(to))
 
 
   /*

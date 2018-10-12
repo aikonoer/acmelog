@@ -7,8 +7,8 @@ import akka.stream.scaladsl.{Flow, Keep, RunnableGraph, Sink, Source}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.immutable
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 class FilterBuilderTest extends FlatSpec with Matchers {
 
@@ -42,7 +42,7 @@ class FilterBuilderTest extends FlatSpec with Matchers {
       .to(LocalDateTime.parse("2018-09-25T15:30:28"))
       .build
 
-    Await.result(graph(flow).run(), 10 seconds).size shouldBe 1
+    Await.result(graph(flow).run(), 10 seconds).size shouldBe 3
 
   }
 

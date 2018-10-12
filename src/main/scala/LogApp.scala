@@ -1,11 +1,14 @@
+import java.io
 import java.nio.file.Paths
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink}
 import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 case class LogApp(env: LogOps, args: Array[String]) {
@@ -17,6 +20,9 @@ case class LogApp(env: LogOps, args: Array[String]) {
 
   val logger = Logger("LoggerApp")
 
+  /*
+  * Run the whole process of parsing, validating, build filters and attaching all parts of the stream.
+  * */
   def run(): Unit = {
 
     val logConfig = for {
@@ -46,23 +52,36 @@ case class LogApp(env: LogOps, args: Array[String]) {
 
       val filters = FilterBuilder.build(conf)
 
-      val flow = Flow[ByteString]
-        .via(toLog)
-        .collect(right)
-        .via(filters)
+      val flow: Flow[ByteString, Log, NotUsed] =
+        Flow[ByteString]
+          .via(toLog)
+          .collect(right)
+          .via(filters)
 
-      val graph = if (conf.destination.isDefined) {
-        source
-          .via(flow)
-          .map(log => ByteString(log.toString + "\n"))
+
+      def sink[T](toFile: Boolean): Sink[T, Future[io.Serializable]] = if (toFile) {
+        Flow[T]
+          .map(e => ByteString(e.toString + "\n"))
           .toMat(FileIO.toPath(Paths.get(conf.destination.get)))(Keep.right)
       } else {
-        source
-          .via(flow)
+        Flow[T]
           .toMat(Sink.foreach(println))(Keep.right)
       }
 
-      graph
+      val isSearch = {
+        val toFile = conf.destination.isDefined
+        if (conf.job.get == "SEARCH") {
+          if (toFile) flow.toMat(sink[Log](toFile = true))(Keep.right)
+          else flow.toMat(sink[Log](toFile = false))(Keep.right)
+        } else {
+          val folded = flow.fold(0)((acc, _) => acc + 1)
+          if (toFile) folded.toMat(sink[Int](toFile = true))(Keep.right)
+          else folded.toMat(sink[Int](toFile = false))(Keep.right)
+        }
+      }
+
+      source
+        .toMat(isSearch)(Keep.right)
         .run()
         .onComplete {
           case Success(_) => logger.info("Done."); system.terminate()
