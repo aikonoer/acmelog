@@ -3,8 +3,8 @@ import java.nio.file.Paths
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink}
+import akka.stream.{ActorMaterializer, IOResult}
+import akka.stream.scaladsl.{FileIO, Flow, Keep, RunnableGraph, Sink, Source}
 import akka.util.ByteString
 import com.typesafe.scalalogging.Logger
 
@@ -58,30 +58,16 @@ case class LogApp(env: LogOps, args: Array[String]) {
           .collect(right)
           .via(filters)
 
-
-      def sink[T](toFile: Boolean): Sink[T, Future[io.Serializable]] = if (toFile) {
-        Flow[T]
-          .map(e => ByteString(e.toString + "\n"))
-          .toMat(FileIO.toPath(Paths.get(conf.destination.get)))(Keep.right)
-      } else {
-        Flow[T]
-          .toMat(Sink.foreach(println))(Keep.right)
+      def graph(isSearch: Boolean, toFile: Boolean, source: Source[Log, Future[IOResult]]): RunnableGraph[Future[io.Serializable]] = {
+        val sourceComposed = if (isSearch) source else source.fold(0)((acc, _) => acc + 1)
+        if (toFile)
+          sourceComposed
+            .map(log => ByteString(log + "\n"))
+            .toMat(FileIO.toPath(Paths.get(conf.destination.get)))(Keep.right)
+        else sourceComposed.toMat(Sink.foreach(println))(Keep.right)
       }
 
-      val isSearch = {
-        val toFile = conf.destination.isDefined
-        if (conf.job.get == "SEARCH") {
-          if (toFile) flow.toMat(sink[Log](toFile = true))(Keep.right)
-          else flow.toMat(sink[Log](toFile = false))(Keep.right)
-        } else {
-          val folded = flow.fold(0)((acc, _) => acc + 1)
-          if (toFile) folded.toMat(sink[Int](toFile = true))(Keep.right)
-          else folded.toMat(sink[Int](toFile = false))(Keep.right)
-        }
-      }
-
-      source
-        .toMat(isSearch)(Keep.right)
+      graph(conf.job.get == "SEARCH", conf.destination.isDefined, source.via(flow))
         .run()
         .onComplete {
           case Success(_) => logger.info("Done."); system.terminate()
@@ -89,4 +75,5 @@ case class LogApp(env: LogOps, args: Array[String]) {
         }
     }
   }
+
 }
