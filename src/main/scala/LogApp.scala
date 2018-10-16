@@ -75,5 +75,4 @@ case class LogApp(env: LogOps, args: Array[String]) {
         }
     }
   }
-
 }
