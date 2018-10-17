@@ -25,10 +25,13 @@ case class LogApp(env: LogOps, args: Array[String]) {
   * */
   def run(): Unit = {
 
+
+
     val logConfig = for {
       parsed <- Config.parse(args)
       validated <- Config.validate(parsed)
     } yield validated
+
 
     if (logConfig.isLeft) {
       system.terminate()
@@ -39,6 +42,7 @@ case class LogApp(env: LogOps, args: Array[String]) {
       val conf = logConfig.right.get
 
       val source = FileIO.fromPath(Paths.get(conf.source.get))
+
       val toLog = Flow[ByteString]
         .via(env.frame)
         .map(env.decodeToString)
@@ -52,6 +56,8 @@ case class LogApp(env: LogOps, args: Array[String]) {
 
       val filters = FilterBuilder.build(conf)
 
+      logger.info(s"Running ${conf.job.get}")
+
       val flow: Flow[ByteString, Log, NotUsed] =
         Flow[ByteString]
           .via(toLog)
@@ -64,7 +70,20 @@ case class LogApp(env: LogOps, args: Array[String]) {
           sourceComposed
             .map(log => ByteString(log + "\n"))
             .toMat(FileIO.toPath(Paths.get(conf.destination.get)))(Keep.right)
-        else sourceComposed.toMat(Sink.foreach(println))(Keep.right)
+        else {
+          if (isSearch) {
+            println("\n-------------------------")
+          } else {
+            val text = for {
+              job <- conf.job
+              fr <- conf.from
+              sev <- conf.severity
+            } yield s"\nJOB: $job FROM: ${fr.toString.replace('T', ' ')} SEVERITY: ${sev.mkString(", ")}"
+            println(text.get)
+            print("---- RESULT: ")
+          }
+          sourceComposed.toMat(Sink.foreach(println))(Keep.right)
+        }
       }
 
       graph(conf.job.get == "SEARCH", conf.destination.isDefined, source.via(flow))

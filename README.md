@@ -1,4 +1,4 @@
-# acmelog
+;# acmelog
 
 LOG search and stats extract<br>
 
